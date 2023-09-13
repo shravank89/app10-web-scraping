@@ -4,8 +4,11 @@ import smtplib
 import ssl
 import os
 import sqlite3
+import time
 
 URL = "http://programmer100.pythonanywhere.com/tours/"
+
+connection = sqlite3.connect("data.db")
 
 
 def scrape(url):
@@ -21,13 +24,22 @@ def extract(source):
 
 
 def read(tour_info):
-    with open("data.txt") as file:
-        return file.read()
+    tour_data = tour_info.split(",")
+    tour_data = [data.strip() for data in tour_data]
+    name, city, date = tour_data
+
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM events WHERE name=? AND city=? AND date=?", (name, city, date))
+    row = cursor.fetchall()
+    return row
 
 
 def store(tour_info):
-    with open("data.txt", "a") as file:
-        file.write(tour_info + "\n")
+    tour_data = tour_info.split(",")
+    tour_data = [item.strip() for item in tour_data]
+    cursor = connection.cursor()
+    cursor.execute("INSERT INTO events VALUES(?, ?, ?)", tour_data)
+    connection.commit()
 
 
 def send_email(message):
@@ -45,11 +57,13 @@ def send_email(message):
 
 
 if __name__ == "__main__":
-    scraped = scrape(URL)
-    extracted = extract(scraped)
+    while True:
+        scraped = scrape(URL)
+        extracted = extract(scraped)
 
-    content = read(extracted)
-    if extracted != "No upcoming tours":
-        if extracted not in content:
-            store(extracted)
-            send_email(extracted)
+        if extracted != "No upcoming tours":
+            data_row = read(extracted)
+            if not data_row:
+                store(extracted)
+                send_email(extracted)
+        time.sleep(2)
