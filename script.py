@@ -6,6 +6,7 @@ connection = sqlite3.connect("data.db")
 
 cursor = connection.cursor()
 
-cursor.execute("CREATE TABLE events(name, city, date)")
-
-connection.commit()
+#cursor.execute("CREATE TABLE events(name, city, date)")
+cursor.execute("SELECT * FROM events")
+print(cursor.fetchall())
+#connection.commit()
